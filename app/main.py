@@ -2,25 +2,24 @@
 from distutils.log import error
 from pydoc import ModuleScanner
 from random import randrange
-from typing import Optional
+from typing import Optional, List
 from fastapi import FastAPI, Response,status, HTTPException, Depends
 from pydantic import BaseModel
 import psycopg2
 from psycopg2.extras import RealDictCursor
 import time
-from . import models
+from . import models , schemas , utils
 from .database import engine, get_db
 from sqlalchemy.orm import Session
+
+
 
 models.Base.metadata.create_all(bind=engine)
 
 app= FastAPI()
 
 
-class Post (BaseModel):
-    title : str 
-    content : str
-    published : bool = True
+
 
 while(True):
     try:
@@ -54,15 +53,15 @@ def test(db: Session = Depends(get_db)):
     return {'data':posts}
 
 
-@app.get('/posts')
+@app.get('/posts',response_model = List[schemas.PostResponse])
 def get_posts(db : Session = Depends(get_db)):
     # cursor.execute('Select * from posts')
     # posts = cursor.fetchall()
     posts = db.query(models.Post).all()
-    return {'data': posts}
+    return posts
 
-@app.post('/posts',status_code= status.HTTP_201_CREATED)
-def create_post(data: Post, db: Session = Depends(get_db)):
+@app.post('/posts',status_code= status.HTTP_201_CREATED,response_model = schemas.PostResponse)
+def create_post(data: schemas.PostCreate, db: Session = Depends(get_db)):
     # To convert the model to Dictionary : data.dict()
     #post_dict = data.dict()
     #post_dict['id'] = randrange(0,1000000)
@@ -77,9 +76,9 @@ def create_post(data: Post, db: Session = Depends(get_db)):
     db.commit()
     # return the newly added post and store it in new_post
     db.refresh(new_post)
-    return {'message': new_post}
+    return new_post
 
-@app.get('/posts/{id}')
+@app.get('/posts/{id}',response_model = schemas.PostResponse)
 def get_post(id : int ,db:Session = Depends(get_db)):
 
     #post = find_post(id)
@@ -89,7 +88,7 @@ def get_post(id : int ,db:Session = Depends(get_db)):
 
     if not post:
         raise HTTPException(status.HTTP_404_NOT_FOUND,f"post with id:{id} was not found")
-    return {'Post': post}
+    return post
 
 @app.delete('/posts/{id}',status_code=status.HTTP_204_NO_CONTENT)
 def delete_post(id:int, db:Session = Depends(get_db)):
@@ -106,8 +105,8 @@ def delete_post(id:int, db:Session = Depends(get_db)):
     db.commit()
     return Response(status_code = status.HTTP_204_NO_CONTENT)
 
-@app.put("/posts/{id}")
-def update_post(id:int, data:Post, db:Session = Depends(get_db)):
+@app.put("/posts/{id}",response_model = schemas.PostResponse)
+def update_post(id:int, data:schemas.PostCreate, db:Session = Depends(get_db)):
     # new_data=data.dict()
     # old_data = find_post(id,index=True)
     #new_data['id'] = id
@@ -123,5 +122,17 @@ def update_post(id:int, data:Post, db:Session = Depends(get_db)):
     
     old_post.update(data.dict(), synchronize_session= False)
     db.commit()
-    return {'Updated_Data': old_post.first()}
+    return old_post.first()
 
+@app.post('/user', status_code= status.HTTP_201_CREATED,response_model=schemas.UserResponse)
+def create_user(data: schemas.UserCreate  , db: Session = Depends(get_db)):
+    #hash the password
+    data.password = utils.hash(data.password)
+    new_user = models.User(**data.dict())
+    validate_user = db.query(models.User).filter(models.User.email == new_user.email).first()
+    if validate_user != None:
+        raise HTTPException(status.HTTP_412_PRECONDITION_FAILED,f"Enter a unique Email address")
+    db.add(new_user)
+    db.commit()
+    db.refresh(new_user)
+    return new_user
