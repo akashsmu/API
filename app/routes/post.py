@@ -82,3 +82,4 @@ def update_post(id:int, data:schemas.PostCreate, db:Session = Depends(get_db)):
     old_post.update(data.dict(), synchronize_session= False)
     db.commit()
     return old_post.first()
+

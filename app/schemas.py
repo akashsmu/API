@@ -30,3 +30,7 @@ class UserResponse(BaseModel):
     class Config:
         orm_mode = True
     pass
+
+class UserLogin(BaseModel):
+    email: EmailStr
+    password : str

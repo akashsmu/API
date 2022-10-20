@@ -10,7 +10,7 @@ from psycopg2.extras import RealDictCursor
 import time
 from . import models 
 from .database import engine, get_db
-from .routes import post,user
+from .routes import post,user,auth
 from sqlalchemy.orm import Session
 
 
@@ -44,6 +44,7 @@ def find_post(id,index= False):
 
 app.include_router(post.router)
 app.include_router(user.router)
+app.include_router(auth.router)
 
 @app.get("/")
 def root():
