@@ -1,4 +1,4 @@
-from .. import models , schemas
+from .. import models , schemas ,oauth
 from fastapi import Response,status,APIRouter, HTTPException, Depends
 from sqlalchemy.orm import Session
 from ..database import get_db
@@ -12,14 +12,15 @@ router = APIRouter(prefix = '/posts', tags = ['Posts'])
 
 
 @router.get('/',response_model = List[schemas.PostResponse])
-def get_posts(db : Session = Depends(get_db)):
+def get_posts(db : Session = Depends(get_db),user
+ :int = Depends(oauth.get_current_user)):
     # cursor.execute('Select * from posts')
     # posts = cursor.fetchall()
     posts = db.query(models.Post).all()
     return posts
 
 @router.post('/',status_code= status.HTTP_201_CREATED,response_model = schemas.PostResponse)
-def create_post(data: schemas.PostCreate, db: Session = Depends(get_db)):
+def create_post(data: schemas.PostCreate, db: Session = Depends(get_db), user :int = Depends(oauth.get_current_user)):
     # To convert the model to Dictionary : data.dict()
     #post_dict = data.dict()
     #post_dict['id'] = randrange(0,1000000)
@@ -37,7 +38,8 @@ def create_post(data: schemas.PostCreate, db: Session = Depends(get_db)):
     return new_post
 
 @router.get('/{id}',response_model = schemas.PostResponse)
-def get_post(id : int ,db:Session = Depends(get_db)):
+def get_post(id : int ,db:Session = Depends(get_db),user
+ :int = Depends(oauth.get_current_user)):
 
     #post = find_post(id)
     # cursor.execute("select * from posts where id = %s",(str(id)))
@@ -50,7 +52,8 @@ def get_post(id : int ,db:Session = Depends(get_db)):
 
 
 @router.delete('/{id}',status_code=status.HTTP_204_NO_CONTENT)
-def delete_post(id:int, db:Session = Depends(get_db)):
+def delete_post(id:int, db:Session = Depends(get_db),user
+ :int = Depends(oauth.get_current_user)):
     #data = find_post(id,index= True)
     #raw.pop(data[0])
     # cursor.execute("delete from posts where id = %s returning *",(str(id),))
@@ -65,7 +68,8 @@ def delete_post(id:int, db:Session = Depends(get_db)):
     return Response(status_code = status.HTTP_204_NO_CONTENT)
 
 @router.put("/{id}",response_model = schemas.PostResponse)
-def update_post(id:int, data:schemas.PostCreate, db:Session = Depends(get_db)):
+def update_post(id:int, data:schemas.PostCreate, db:Session = Depends(get_db),user
+ :int = Depends(oauth.get_current_user)):
     # new_data=data.dict()
     # old_data = find_post(id,index=True)
     #new_data['id'] = id
