@@ -29,8 +29,8 @@ def create_post(data: schemas.PostCreate, db: Session = Depends(get_db), user :i
     # values (%s,%s,%s) returning * """,(data.title,data.content,data.published))
     # new_post = cursor.fetchone()
     # conn.commit()
-
-    new_post = models.Post(**data.dict())
+    
+    new_post = models.Post(**data.dict())#,user_id = user.id)
     db.add(new_post)
     db.commit()
     # return the newly added post and store it in new_post
@@ -38,8 +38,7 @@ def create_post(data: schemas.PostCreate, db: Session = Depends(get_db), user :i
     return new_post
 
 @router.get('/{id}',response_model = schemas.PostResponse)
-def get_post(id : int ,db:Session = Depends(get_db),user
- :int = Depends(oauth.get_current_user)):
+def get_post(id : int ,db:Session = Depends(get_db),user:int = Depends(oauth.get_current_user)):
 
     #post = find_post(id)
     # cursor.execute("select * from posts where id = %s",(str(id)))
