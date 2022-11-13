@@ -30,7 +30,7 @@ def create_post(data: schemas.PostCreate, db: Session = Depends(get_db), user :i
     # new_post = cursor.fetchone()
     # conn.commit()
     
-    new_post = models.Post(**data.dict())#,user_id = user.id)
+    new_post = models.Post(**data.dict(),user_id = user.id)
     db.add(new_post)
     db.commit()
     # return the newly added post and store it in new_post
@@ -44,6 +44,9 @@ def get_post(id : int ,db:Session = Depends(get_db),user:int = Depends(oauth.get
     # cursor.execute("select * from posts where id = %s",(str(id)))
     # post = cursor.fetchall()
     post = db.query(models.Post).filter(models.Post.id == id).first()
+
+    # To retrieve posts of only a logged in user
+    # post =db.query(models.Post).filter(models.Post.user_id == user.id).all()
 
     if not post:
         raise HTTPException(status.HTTP_404_NOT_FOUND,f"post with id:{id} was not found")
@@ -61,6 +64,8 @@ def delete_post(id:int, db:Session = Depends(get_db),user
     post = db.query(models.Post).filter(models.Post.id == id)
     if post.first() == None:
         raise HTTPException(status.HTTP_404_NOT_FOUND,f"post with id:{id} was not found")
+    if post.first().user_id != user.id:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail =f'Not authorized to perform requested action')
     
     post.delete(synchronize_session=False)
     db.commit()
@@ -81,8 +86,9 @@ def update_post(id:int, data:schemas.PostCreate, db:Session = Depends(get_db),us
     old_post = db.query(models.Post).filter(models.Post.id == id)
     if old_post .first()== None:
         raise HTTPException(status.HTTP_404_NOT_FOUND,f"post with id:{id} was not found")
+    if old_post.first().user_id != user.id:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail =f'Not authorized to perform requested action')
     
     old_post.update(data.dict(), synchronize_session= False)
     db.commit()
     return old_post.first()
-
