@@ -28,7 +28,6 @@ class PostCreate(Post):
 class PostResponse(Post):
     id: int
     create_at : datetime
-    user_id: int
     owner : UserResponse
 
     class Config:
